@@ -78,6 +78,7 @@ export interface ContaminationLevel {
   label: string; // "🟢 약한 오염" | "🟡 중간 오염" | "🔴 심한 오염"
   description: string; // 오염도 설명
   action: string; // 처리 방법
+  imageUrl?: string | null; // 오염도 예시 이미지 URL
 }
 
 /** 분리배출 가이드 — 재활용 카테고리 인터페이스 */

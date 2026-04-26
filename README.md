@@ -92,10 +92,43 @@ AUTH_GOOGLE_SECRET="your-google-client-secret"
 
 ### 데이터베이스 설정
 
+Prisma CLI는 `.env.local`이 아닌 `.env` 파일을 참조합니다. `.env` 파일을 생성하고 `DATABASE_URL`을 설정하세요:
+
+```bash
+# .env 파일 생성 (Prisma CLI용)
+echo 'DATABASE_URL="postgresql://user:password@localhost:5432/seoul_waste_tracker?schema=public"' > .env
+```
+
+PostgreSQL에 데이터베이스를 생성합니다:
+
+```bash
+createdb seoul_waste_tracker
+```
+
+테이블 생성 (마이그레이션):
+
 ```bash
 npx prisma migrate dev --name init
+```
+
+### 초기 데이터 생성 (시드)
+
+분리배출 가이드 데이터(6개 카테고리 × 3단계 오염도 = 18개 처리 방법)를 DB에 투입합니다:
+
+```bash
 npx prisma db seed
 ```
+
+시드 데이터는 `prisma/seed.ts`에 정의되어 있으며, 다음 카테고리가 생성됩니다:
+
+- ♻️ 플라스틱 (트레이, PP용기, 페트병 등)
+- 🛍️ 비닐 (비닐봉지, 과자봉지, 택배비닐 등)
+- 📄 종이 (신문지, 택배상자, 우유팩 등)
+- 📦 스티로폼 (배달용기, 과일포장재 등)
+- 🫙 유리 (음료수병, 소주병, 잼병 등)
+- 🥫 캔 (음료캔, 참치캔, 통조림 등)
+
+시드는 upsert 기반이므로 여러 번 실행해도 안전합니다.
 
 ### 개발 서버 실행
 

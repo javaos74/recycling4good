@@ -96,12 +96,13 @@ model RecyclingCategory {
 }
 
 model ContaminationLevel {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   categoryId  String
-  level       String @db.VarChar(10) // "low" | "medium" | "high"
-  label       String @db.VarChar(20) // "🟢 약한 오염" 등
-  description String @db.Text // 오염도 설명
-  action      String @db.Text // 처리 방법
+  level       String  @db.VarChar(10) // "low" | "medium" | "high"
+  label       String  @db.VarChar(20) // "🟢 약한 오염" 등
+  description String  @db.Text // 오염도 설명
+  action      String  @db.Text // 처리 방법
+  imageUrl    String? @db.Text // 오염도 예시 이미지 URL
 
   category RecyclingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 

@@ -1,9 +1,20 @@
 // 분리배출 가이드 시드 데이터
 // 6개 재활용 카테고리 × 3단계 오염도 = 18개 처리 방법 레코드
+// 각 오염도 단계에 예시 이미지 URL 포함
 
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
+
+// 카테고리 영문 키 매핑 (이미지 파일명용)
+const categoryKeys: Record<string, string> = {
+  "플라스틱": "plastic",
+  "비닐": "vinyl",
+  "종이": "paper",
+  "스티로폼": "styrofoam",
+  "유리": "glass",
+  "캔": "can",
+};
 
 // 시드 데이터 정의: 서울시 분리배출 가이드 기준
 const categories = [
@@ -176,6 +187,8 @@ async function main() {
   console.log("🌱 분리배출 가이드 시드 데이터 투입을 시작합니다...");
 
   for (const category of categories) {
+    const key = categoryKeys[category.name];
+
     // 카테고리 upsert (멱등성 보장)
     const createdCategory = await prisma.recyclingCategory.upsert({
       where: { name: category.name },
@@ -196,8 +209,10 @@ async function main() {
 
     console.log(`  ✅ 카테고리 생성/업데이트: ${category.icon} ${category.name}`);
 
-    // 오염도 레벨 upsert (멱등성 보장)
+    // 오염도 레벨 upsert (멱등성 보장, imageUrl 포함)
     for (const level of category.levels) {
+      const imageUrl = `/images/guide/${key}-${level.level}.jpg`;
+
       await prisma.contaminationLevel.upsert({
         where: {
           categoryId_level: {
@@ -209,6 +224,7 @@ async function main() {
           label: level.label,
           description: level.description,
           action: level.action,
+          imageUrl,
         },
         create: {
           categoryId: createdCategory.id,
@@ -216,15 +232,17 @@ async function main() {
           label: level.label,
           description: level.description,
           action: level.action,
+          imageUrl,
         },
       });
     }
 
-    console.log(`    → ${category.levels.length}개 오염도 레벨 생성/업데이트 완료`);
+    console.log(`    → ${category.levels.length}개 오염도 레벨 생성/업데이트 완료 (이미지 포함)`);
   }
 
   console.log("\n🎉 시드 데이터 투입이 완료되었습니다!");
   console.log(`   총 ${categories.length}개 카테고리, ${categories.length * 3}개 처리 방법 레코드`);
+  console.log("   📸 이미지 파일은 public/images/guide/ 디렉토리에 배치하세요.");
 }
 
 main()
