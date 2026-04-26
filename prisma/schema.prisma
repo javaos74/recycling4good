@@ -1,0 +1,174 @@
+// schema.prisma
+// 서울시 일반쓰레기 줄이기 트래커 — 데이터베이스 스키마
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== Auth.js 필수 모델 =====
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  // 앱 커스텀 필드
+  nickname    String? @db.VarChar(20)
+  region      String? @db.VarChar(20)
+  isOnboarded Boolean @default(false)
+
+  accounts Account[]
+  sessions Session[]
+
+  // Phase 2 관계
+  wasteRecords WasteRecord[]
+  posts        Post[]
+  comments     Comment[]
+  likes        Like[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String // "kakao" | "naver" | "google"
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ===== 분리배출 가이드 모델 =====
+
+model RecyclingCategory {
+  id    String   @id @default(cuid())
+  name  String   @unique @db.VarChar(20) // "플라스틱", "비닐", "종이", "스티로폼", "유리", "캔"
+  icon  String   @db.VarChar(10)
+  items String[] // 품목 예시 배열
+  tip   String   @db.Text // 실용적 TIP
+
+  levels ContaminationLevel[]
+
+  sortOrder Int @default(0) // 표시 순서
+
+  @@map("recycling_categories")
+}
+
+model ContaminationLevel {
+  id          String @id @default(cuid())
+  categoryId  String
+  level       String @db.VarChar(10) // "low" | "medium" | "high"
+  label       String @db.VarChar(20) // "🟢 약한 오염" 등
+  description String @db.Text // 오염도 설명
+  action      String @db.Text // 처리 방법
+
+  category RecyclingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, level])
+  @@map("contamination_levels")
+}
+
+// ===== 배출량 기록 모델 =====
+
+model WasteRecord {
+  id       String   @id @default(cuid())
+  userId   String
+  date     DateTime @db.Date
+  weightKg Decimal  @db.Decimal(6, 2)
+  bags     Json? // { "5L": 0, "10L": 1, "20L": 0, "30L": 0, "50L": 0 }
+  photoUrl String?  @db.Text
+  memo     String?  @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
+  @@map("waste_records")
+}
+
+model Post {
+  id       String @id @default(cuid())
+  userId   String
+  category String @db.VarChar(10) // "tip" | "proof" | "free"
+  content  String @db.Text
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  likes    Like[]
+
+  createdAt DateTime @default(now())
+
+  @@index([category])
+  @@map("posts")
+}
+
+model Comment {
+  id       String  @id @default(cuid())
+  postId   String
+  userId   String
+  parentId String? // 대댓글인 경우 부모 댓글 ID
+  content  String  @db.Text
+
+  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies Comment[] @relation("CommentReplies")
+
+  createdAt DateTime @default(now())
+
+  @@map("comments")
+}
+
+model Like {
+  id     String @id @default(cuid())
+  postId String
+  userId String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("likes")
+}
