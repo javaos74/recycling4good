@@ -1,9 +1,10 @@
 // 오염도 단계별 처리 방법 표시 컴포넌트 — 클라이언트 컴포넌트
-// 🟢 약한 오염 / 🟡 중간 오염 / 🔴 심한 오염 색상 구분
+// 🟢 약한 오염 / 🟡 중간 오염 / 🔴 심한 오염 색상 구분 + 예시 이미지
 // 요구사항: 6.3, 6.4
 
 "use client";
 
+import { useState } from "react";
 import type { ContaminationLevel as ContaminationLevelType } from "@/lib/types";
 
 /** 오염도 레벨별 색상 매핑 */
@@ -28,6 +29,7 @@ interface ContaminationLevelProps {
 export default function ContaminationLevel({ level }: ContaminationLevelProps) {
   const style = LEVEL_STYLES[level.level] ?? LEVEL_STYLES.low;
   const icon = LEVEL_ICONS[level.level] ?? "⚪";
+  const [imgError, setImgError] = useState(false);
 
   return (
     <div
@@ -39,6 +41,20 @@ export default function ContaminationLevel({ level }: ContaminationLevelProps) {
         <span aria-hidden="true">{icon}</span>{" "}
         {level.label.replace(/^[🟢🟡🔴]\s*/, "")}
       </div>
+
+      {/* 오염도 예시 이미지 — 이미지가 있고 로드 실패하지 않은 경우 표시 */}
+      {level.imageUrl && !imgError && (
+        <div className="my-2 overflow-hidden rounded-md">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={level.imageUrl}
+            alt={`${level.label} 예시`}
+            className="h-auto w-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        </div>
+      )}
+
       {/* 오염도 설명 */}
       <p className="mb-1 text-xs text-gray-500">{level.description}</p>
       {/* 처리 방법 */}

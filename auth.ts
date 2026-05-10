@@ -16,6 +16,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // JWT 세션 전략 — Edge Runtime 호환 (미들웨어에서 DB 호출 불필요)
   session: {
     strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 세션 만료: 24시간
   },
 
   // 소셜 로그인 프로바이더 설정

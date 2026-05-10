@@ -29,6 +29,7 @@ async function getCategories(): Promise<RecyclingCategory[]> {
         label: lv.label,
         description: lv.description,
         action: lv.action,
+        imageUrl: lv.imageUrl ?? null,
       })),
     }));
   } catch {
